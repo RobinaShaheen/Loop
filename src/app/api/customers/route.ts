@@ -1,24 +1,10 @@
 import { NextResponse } from "next/server";
 
-import { prisma } from "@/lib/prisma";
+import { customerRecords } from "@/lib/mock-data";
 
 export async function GET() {
-  const customers = await prisma.customer.findMany({
-    orderBy: { createdAt: "desc" },
-  });
-
   return NextResponse.json({
-    data: customers.map((customer) => ({
-      id: customer.id,
-      name: customer.name,
-      email: customer.email,
-      company: customer.company,
-      feedback: customer.feedbackCount,
-      sentiment: customer.sentiment,
-      score: customer.score,
-      lastFeedback: customer.lastFeedback ?? "No feedback yet",
-      status: customer.status,
-    })),
+    data: customerRecords,
   });
 }
 
@@ -47,29 +33,23 @@ export async function POST(request: Request) {
       );
     }
 
-    const created = await prisma.customer.create({
-      data: {
-        name,
-        email,
-        company,
-        status: status === "Active" || status === "Inactive" ? status : "Active",
-        sentiment: "Neutral",
-      },
-    });
+    const created = {
+      id: Math.max(0, ...customerRecords.map((customer) => customer.id)) + 1,
+      name,
+      email,
+      company,
+      feedback: 0,
+      sentiment: "Neutral" as const,
+      score: 0,
+      lastFeedback: "No feedback yet",
+      status: status === "Inactive" ? ("Inactive" as const) : ("Active" as const),
+    };
+
+    customerRecords.unshift(created);
 
     return NextResponse.json(
       {
-        data: {
-          id: created.id,
-          name: created.name,
-          email: created.email,
-          company: created.company,
-          feedback: created.feedbackCount,
-          sentiment: created.sentiment,
-          score: created.score,
-          lastFeedback: created.lastFeedback ?? "No feedback yet",
-          status: created.status,
-        },
+        data: created,
         success: true,
       },
       { status: 201 }

@@ -1,23 +1,10 @@
 import { NextResponse } from "next/server";
 
-import { prisma } from "@/lib/prisma";
+import { feedbackItems } from "@/lib/mock-data";
 
 export async function GET() {
-  const items = await prisma.feedback.findMany({
-    orderBy: { createdAt: "desc" },
-  });
-
   return NextResponse.json({
-    data: items.map((item) => ({
-      id: item.id,
-      customer: item.customerName,
-      email: item.email,
-      message: item.message,
-      sentiment: item.sentiment,
-      category: item.category,
-      priority: item.priority,
-      date: item.date,
-    })),
+    data: feedbackItems,
   });
 }
 
@@ -56,34 +43,26 @@ export async function POST(request: Request) {
       ? priority
       : "Medium";
 
-    const created = await prisma.feedback.create({
-      data: {
-        customerName,
-        email,
-        message,
-        sentiment: validSentiment,
-        category,
-        priority: validPriority,
-        date: new Date().toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        }),
-      },
-    });
+    const created = {
+      id: Math.max(0, ...feedbackItems.map((item) => item.id)) + 1,
+      customer: customerName,
+      email,
+      message,
+      sentiment: validSentiment as (typeof feedbackItems)[number]["sentiment"],
+      category,
+      priority: validPriority as (typeof feedbackItems)[number]["priority"],
+      date: new Date().toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }),
+    };
+
+    feedbackItems.unshift(created);
 
     return NextResponse.json(
       {
-        data: {
-          id: created.id,
-          customer: created.customerName,
-          email: created.email,
-          message: created.message,
-          sentiment: created.sentiment,
-          category: created.category,
-          priority: created.priority,
-          date: created.date,
-        },
+        data: created,
         success: true,
       },
       { status: 201 }
