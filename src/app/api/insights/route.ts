@@ -1,24 +1,28 @@
 import { NextResponse } from "next/server";
 
-import {
-  insightItems,
-  recommendationItems,
-  themeItems,
-} from "@/lib/mock-data";
+import { ensureDatabase, getSql } from "@/lib/neon";
 
 export async function GET() {
+  await ensureDatabase();
+  const sql = getSql();
+  const insights = (await sql`
+    SELECT id, title, description, confidence, category
+    FROM insights ORDER BY created_at DESC, id DESC
+  `) as Array<Record<string, unknown>>;
+  const themes = (await sql`
+    SELECT id, name, percentage, feedback_count AS "feedbackCount"
+    FROM themes ORDER BY created_at DESC, id DESC
+  `) as Array<Record<string, unknown>>;
+  const recommendations = (await sql`
+    SELECT id, title, description, priority, applied
+    FROM recommendations ORDER BY created_at DESC, id DESC
+  `) as Array<Record<string, unknown>>;
+
   return NextResponse.json({
     data: {
-      insights: insightItems.map((item) => ({
-        ...item,
-        title: item.title,
-        description: item.description,
-        confidence: item.confidence,
-        category: item.category,
-        icon: item.category,
-      })),
-      themes: themeItems,
-      recommendations: recommendationItems,
+      insights: insights.map((item) => ({ ...item, icon: item.category })),
+      themes,
+      recommendations,
     },
   });
 }

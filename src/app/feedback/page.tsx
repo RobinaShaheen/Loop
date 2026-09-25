@@ -32,75 +32,6 @@ type Feedback = {
   date: string;
 };
 
-const initialFeedbackData: Feedback[] = [
-  {
-    id: 1,
-    customer: "Sarah Johnson",
-    email: "sarah@example.com",
-    message:
-      "The new dashboard is really easy to use. I especially like the clean layout.",
-    sentiment: "Positive",
-    category: "Product",
-    priority: "Low",
-    date: "Sep 15, 2026",
-  },
-  {
-    id: 2,
-    customer: "Michael Chen",
-    email: "michael@example.com",
-    message:
-      "The export feature is useful, but generating large reports takes too long.",
-    sentiment: "Neutral",
-    category: "Performance",
-    priority: "Medium",
-    date: "Sep 14, 2026",
-  },
-  {
-    id: 3,
-    customer: "Emily Davis",
-    email: "emily@example.com",
-    message:
-      "I had trouble finding the billing settings. The navigation could be clearer.",
-    sentiment: "Negative",
-    category: "UX",
-    priority: "High",
-    date: "Sep 13, 2026",
-  },
-  {
-    id: 4,
-    customer: "James Wilson",
-    email: "james@example.com",
-    message:
-      "Great experience overall. Your support team responded very quickly.",
-    sentiment: "Positive",
-    category: "Support",
-    priority: "Low",
-    date: "Sep 12, 2026",
-  },
-  {
-    id: 5,
-    customer: "Olivia Brown",
-    email: "olivia@example.com",
-    message:
-      "The mobile experience is good, but some buttons are a little difficult to tap.",
-    sentiment: "Neutral",
-    category: "Mobile",
-    priority: "Medium",
-    date: "Sep 11, 2026",
-  },
-  {
-    id: 6,
-    customer: "Daniel Miller",
-    email: "daniel@example.com",
-    message:
-      "The application keeps logging me out. Please look into the authentication issue.",
-    sentiment: "Negative",
-    category: "Account",
-    priority: "High",
-    date: "Sep 10, 2026",
-  },
-];
-
 const categories = [
   "Product",
   "Performance",
@@ -113,8 +44,7 @@ const categories = [
 ];
 
 export default function FeedbackPage() {
-  const [feedbackList, setFeedbackList] =
-    useState<Feedback[]>(initialFeedbackData);
+  const [feedbackList, setFeedbackList] = useState<Feedback[]>([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -127,7 +57,7 @@ export default function FeedbackPage() {
       })
       .catch(() => {
         if (isMounted) {
-          setFeedbackList(initialFeedbackData);
+          setFeedbackList([]);
         }
       });
 
@@ -234,7 +164,7 @@ export default function FeedbackPage() {
     setFormError("");
   }
 
-  function handleAddFeedback(event: React.FormEvent<HTMLFormElement>) {
+  async function handleAddFeedback(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const customer = newFeedback.customer.trim();
@@ -253,22 +183,20 @@ export default function FeedbackPage() {
       return;
     }
 
-    const feedback: Feedback = {
-      id: Date.now(),
-      customer,
-      email,
-      message,
-      sentiment: newFeedback.sentiment,
-      category: newFeedback.category,
-      priority: newFeedback.priority,
-      date: new Date().toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      }),
-    };
+    const response = await fetch("/api/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newFeedback),
+    });
 
-    setFeedbackList((current) => [feedback, ...current]);
+    if (!response.ok) {
+      const result = await response.json().catch(() => null);
+      setFormError(result?.error ?? "Unable to add feedback.");
+      return;
+    }
+
+    const result = await response.json();
+    setFeedbackList((current) => [result.data, ...current]);
 
     closeAddModal();
     resetForm();

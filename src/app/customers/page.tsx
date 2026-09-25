@@ -29,100 +29,8 @@ type Customer = {
   status: "Active" | "Inactive";
 };
 
-const initialCustomers: Customer[] = [
-  {
-    id: 1,
-    name: "Sarah Johnson",
-    email: "sarah.johnson@example.com",
-    company: "Acme Inc.",
-    feedback: 24,
-    sentiment: "Positive",
-    score: 92,
-    lastFeedback: "Sep 15, 2026",
-    status: "Active",
-  },
-  {
-    id: 2,
-    name: "Michael Chen",
-    email: "michael.chen@example.com",
-    company: "TechFlow",
-    feedback: 18,
-    sentiment: "Positive",
-    score: 87,
-    lastFeedback: "Sep 14, 2026",
-    status: "Active",
-  },
-  {
-    id: 3,
-    name: "Emily Davis",
-    email: "emily.davis@example.com",
-    company: "Bright Labs",
-    feedback: 15,
-    sentiment: "Neutral",
-    score: 71,
-    lastFeedback: "Sep 13, 2026",
-    status: "Active",
-  },
-  {
-    id: 4,
-    name: "James Wilson",
-    email: "james.wilson@example.com",
-    company: "Nova Systems",
-    feedback: 11,
-    sentiment: "Negative",
-    score: 43,
-    lastFeedback: "Sep 12, 2026",
-    status: "Active",
-  },
-  {
-    id: 5,
-    name: "Olivia Brown",
-    email: "olivia.brown@example.com",
-    company: "CloudBase",
-    feedback: 9,
-    sentiment: "Positive",
-    score: 95,
-    lastFeedback: "Sep 11, 2026",
-    status: "Active",
-  },
-  {
-    id: 6,
-    name: "Daniel Miller",
-    email: "daniel.miller@example.com",
-    company: "Vertex Digital",
-    feedback: 7,
-    sentiment: "Neutral",
-    score: 68,
-    lastFeedback: "Sep 10, 2026",
-    status: "Inactive",
-  },
-  {
-    id: 7,
-    name: "Sophia Taylor",
-    email: "sophia.taylor@example.com",
-    company: "PixelWorks",
-    feedback: 21,
-    sentiment: "Positive",
-    score: 89,
-    lastFeedback: "Sep 9, 2026",
-    status: "Active",
-  },
-  {
-    id: 8,
-    name: "William Anderson",
-    email: "william.anderson@example.com",
-    company: "DataCore",
-    feedback: 13,
-    sentiment: "Negative",
-    score: 48,
-    lastFeedback: "Sep 8, 2026",
-    status: "Inactive",
-  },
-];
-
 export default function CustomersPage() {
-  const [customers, setCustomers] =
-    useState<Customer[]>(initialCustomers);
+  const [customers, setCustomers] = useState<Customer[]>([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -135,7 +43,7 @@ export default function CustomersPage() {
       })
       .catch(() => {
         if (isMounted) {
-          setCustomers(initialCustomers);
+          setCustomers([]);
         }
       });
 
@@ -213,7 +121,7 @@ export default function CustomersPage() {
     }
   };
 
-  const handleAddCustomer = () => {
+  const handleAddCustomer = async () => {
     if (
       !newCustomer.name.trim() ||
       !newCustomer.email.trim() ||
@@ -227,19 +135,20 @@ export default function CustomersPage() {
       return;
     }
 
-    const customer: Customer = {
-      id: Date.now(),
-      name: newCustomer.name.trim(),
-      email: newCustomer.email.trim(),
-      company: newCustomer.company.trim(),
-      feedback: 0,
-      sentiment: "Neutral",
-      score: 0,
-      lastFeedback: "No feedback yet",
-      status: newCustomer.status,
-    };
+    const response = await fetch("/api/customers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newCustomer),
+    });
 
-    setCustomers((current) => [customer, ...current]);
+    if (!response.ok) {
+      const result = await response.json().catch(() => null);
+      setEmailError(result?.error ?? "Unable to add customer.");
+      return;
+    }
+
+    const result = await response.json();
+    setCustomers((current) => [result.data, ...current]);
 
     setNewCustomer({
       name: "",

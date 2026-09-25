@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getSql } from "@/lib/neon";
+import { ensureDatabase, getSql } from "@/lib/neon";
 
 type FeedbackRow = {
   id: number;
@@ -13,26 +13,8 @@ type FeedbackRow = {
   date: string;
 };
 
-async function ensureFeedbackTable() {
-  const sql = getSql();
-
-  await sql`
-    CREATE TABLE IF NOT EXISTS feedback (
-      id SERIAL PRIMARY KEY,
-      customer TEXT NOT NULL,
-      email TEXT NOT NULL,
-      message TEXT NOT NULL,
-      sentiment TEXT NOT NULL,
-      category TEXT NOT NULL,
-      priority TEXT NOT NULL,
-      date TEXT NOT NULL,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )
-  `;
-}
-
 export async function GET() {
-  await ensureFeedbackTable();
+  await ensureDatabase();
   const sql = getSql();
 
   const items = (await sql`
@@ -89,7 +71,7 @@ export async function POST(request: Request) {
       ? priority
       : "Medium";
 
-    await ensureFeedbackTable();
+    await ensureDatabase();
     const sql = getSql();
 
     const [created] = (await sql`

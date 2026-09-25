@@ -1,10 +1,31 @@
 import { NextResponse } from "next/server";
 
-import { customerRecords } from "@/lib/mock-data";
+import { ensureDatabase, getSql } from "@/lib/neon";
+
+type CustomerRow = {
+  id: number;
+  name: string;
+  email: string;
+  company: string;
+  feedback: number;
+  sentiment: "Positive" | "Neutral" | "Negative";
+  score: number;
+  lastFeedback: string;
+  status: "Active" | "Inactive";
+};
 
 export async function GET() {
+  await ensureDatabase();
+  const sql = getSql();
+  const customers = (await sql`
+    SELECT id, name, email, company, feedback, sentiment, score,
+      last_feedback AS "lastFeedback", status
+    FROM customers
+    ORDER BY created_at DESC, id DESC
+  `) as CustomerRow[];
+
   return NextResponse.json({
-    data: customerRecords,
+    data: customers,
   });
 }
 
@@ -33,19 +54,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const created = {
-      id: Math.max(0, ...customerRecords.map((customer) => customer.id)) + 1,
-      name,
-      email,
-      company,
-      feedback: 0,
-      sentiment: "Neutral" as const,
-      score: 0,
-      lastFeedback: "No feedback yet",
-      status: status === "Inactive" ? ("Inactive" as const) : ("Active" as const),
-    };
-
-    customerRecords.unshift(created);
+    await ensureDatabase();
+    const sql = getSql();
+    const [created] = (await sql`
+      INSERT INTO customers (name, email, company, status)
+      VALUES (${name}, ${email}, ${company}, ${status === "Inactive" ? "Inactive" : "Active"})
+      RETURNING id, name, email, company, feedback, sentiment, score,
+        last_feedback AS "lastFeedback", status
+    `) as CustomerRow[];
 
     return NextResponse.json(
       {

@@ -17,57 +17,42 @@ import Topbar from "@/components/Topbar";
 const stats = [
   {
     title: "Total Feedback",
-    value: "2,847",
-    change: "+12.5%",
+    value: "0",
+    change: "",
     icon: MessageSquare,
     href: "/feedback",
   },
   {
     title: "Customers",
-    value: "1,284",
-    change: "+8.2%",
+    value: "0",
+    change: "",
     icon: Users,
     href: "/customers",
   },
   {
     title: "Positive Sentiment",
-    value: "78.4%",
-    change: "+4.6%",
+    value: "0%",
+    change: "",
     icon: Smile,
     href: "/insights",
   },
   {
     title: "Response Rate",
-    value: "64.8%",
-    change: "+7.1%",
+    value: "0%",
+    change: "",
     icon: Activity,
     href: "/analytics",
   },
 ];
 
-const chartData = [
-  { month: "Apr", height: 42 },
-  { month: "May", height: 58 },
-  { month: "Jun", height: 48 },
-  { month: "Jul", height: 72 },
-  { month: "Aug", height: 64 },
-  { month: "Sep", height: 86 },
-  { month: "", height: 78 },
-  { month: "", height: 94 },
-  { month: "", height: 70 },
-  { month: "", height: 82 },
-  { month: "", height: 90 },
-  { month: "", height: 96 },
-];
-
 export default function Dashboard() {
   const [summary, setSummary] = useState({
-    stats,
-    chartData,
+    stats: stats.map((item) => ({ ...item, value: "0", change: "" })),
+    chartData: [] as { month: string; height: number }[],
     sentimentBreakdown: [
-      { label: "Positive", value: "78%" },
-      { label: "Neutral", value: "14%" },
-      { label: "Negative", value: "8%" },
+      { label: "Positive", value: "0%" },
+      { label: "Neutral", value: "0%" },
+      { label: "Negative", value: "0%" },
     ],
   });
 
@@ -85,28 +70,14 @@ export default function Dashboard() {
                 ...stats[index % stats.length],
                 ...item,
               }))
-            : stats,
-          chartData: result.data.chartData ?? chartData,
-          sentimentBreakdown:
-            result.data.sentimentBreakdown ??
-            [
-              { label: "Positive", value: "78%" },
-              { label: "Neutral", value: "14%" },
-              { label: "Negative", value: "8%" },
-            ],
+            : [],
+          chartData: result.data.chartData ?? [],
+          sentimentBreakdown: result.data.sentimentBreakdown ?? [],
         });
       })
       .catch(() => {
         if (isMounted) {
-          setSummary({
-            stats,
-            chartData,
-            sentimentBreakdown: [
-              { label: "Positive", value: "78%" },
-              { label: "Neutral", value: "14%" },
-              { label: "Negative", value: "8%" },
-            ],
-          });
+          setSummary({ stats: [], chartData: [], sentimentBreakdown: [] });
         }
       });
 
@@ -272,7 +243,9 @@ export default function Dashboard() {
                 >
                   <div className="flex h-40 w-40 items-center justify-center rounded-full border-[18px] border-slate-700 transition hover:border-slate-500">
                     <div className="text-center">
-                      <p className="text-3xl font-bold">78.4%</p>
+                      <p className="text-3xl font-bold">
+                        {summary.sentimentBreakdown.find((item) => item.label === "Positive")?.value ?? "0%"}
+                      </p>
 
                       <p className="mt-1 text-xs text-emerald-400">
                         Positive

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   BarChart3,
@@ -30,49 +30,6 @@ type Report = {
   description: string;
 };
 
-const initialReports: Report[] = [
-  {
-    id: 1,
-    name: "Monthly Feedback Report",
-    type: "Feedback",
-    dateRange: "September 2026",
-    createdAt: "Sep 14, 2026",
-    status: "Ready",
-    description:
-      "Overview of customer feedback collected during September 2026.",
-  },
-  {
-    id: 2,
-    name: "Sentiment Analysis Report",
-    type: "Sentiment",
-    dateRange: "Last 30 days",
-    createdAt: "Sep 12, 2026",
-    status: "Ready",
-    description:
-      "Detailed breakdown of positive, neutral, and negative customer sentiment.",
-  },
-  {
-    id: 3,
-    name: "Customer Engagement Report",
-    type: "Customer",
-    dateRange: "Last 90 days",
-    createdAt: "Sep 08, 2026",
-    status: "Ready",
-    description:
-      "Customer activity, engagement levels, and feedback participation.",
-  },
-  {
-    id: 4,
-    name: "Analytics Performance Report",
-    type: "Analytics",
-    dateRange: "Last 6 months",
-    createdAt: "Sep 02, 2026",
-    status: "Ready",
-    description:
-      "Performance overview covering feedback trends, themes, and sentiment.",
-  },
-];
-
 const reportTypes = [
   {
     name: "Feedback",
@@ -101,7 +58,7 @@ const reportTypes = [
 ];
 
 export default function ReportsPage() {
-  const [reports, setReports] = useState<Report[]>(initialReports);
+  const [reports, setReports] = useState<Report[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState("All");
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -114,6 +71,13 @@ export default function ReportsPage() {
     type: "Feedback",
     dateRange: "Last 30 days",
   });
+
+  useEffect(() => {
+    fetch("/api/reports")
+      .then((response) => response.json())
+      .then((result) => setReports(Array.isArray(result?.data) ? result.data : []))
+      .catch(() => setReports([]));
+  }, []);
 
   const filteredReports = useMemo(() => {
     return reports.filter((report) => {
@@ -136,26 +100,24 @@ export default function ReportsPage() {
     }, 3000);
   };
 
-  const handleCreateReport = () => {
+  const handleCreateReport = async () => {
     if (!newReport.name.trim()) {
       return;
     }
 
-    const report: Report = {
-      id: Date.now(),
-      name: newReport.name.trim(),
-      type: newReport.type,
-      dateRange: newReport.dateRange,
-      createdAt: new Date().toLocaleDateString("en-US", {
-        month: "short",
-        day: "2-digit",
-        year: "numeric",
-      }),
-      status: "Ready",
-      description: `${newReport.type} report generated for ${newReport.dateRange}.`,
-    };
+    const response = await fetch("/api/reports", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newReport),
+    });
+    const result = await response.json();
 
-    setReports((current) => [report, ...current]);
+    if (!response.ok) {
+      showSuccess(result?.error ?? "Unable to create report.");
+      return;
+    }
+
+    setReports((current) => [result.data, ...current]);
 
     setNewReport({
       name: "",
@@ -167,7 +129,14 @@ export default function ReportsPage() {
     showSuccess("Report created successfully.");
   };
 
-  const handleDeleteReport = (id: number) => {
+  const handleDeleteReport = async (id: number) => {
+    const response = await fetch(`/api/reports?id=${id}`, { method: "DELETE" });
+
+    if (!response.ok) {
+      showSuccess("Unable to delete report.");
+      return;
+    }
+
     setReports((current) => current.filter((report) => report.id !== id));
 
     if (selectedReport?.id === id) {
@@ -231,10 +200,10 @@ export default function ReportsPage() {
         report.dateRange,
         report.createdAt,
         report.status,
-        "2847",
-        "1284",
-        "78.4%",
-        "64.8%",
+        "0",
+        "0",
+        "0%",
+        "0%",
       ],
     ];
 
@@ -900,28 +869,28 @@ export default function ReportsPage() {
                 <div>
                   <p className="text-xs text-gray-400">Feedback</p>
                   <p className="mt-1 text-xl font-bold text-gray-900">
-                    2,847
+                    0
                   </p>
                 </div>
 
                 <div>
                   <p className="text-xs text-gray-400">Customers</p>
                   <p className="mt-1 text-xl font-bold text-gray-900">
-                    1,284
+                    0
                   </p>
                 </div>
 
                 <div>
                   <p className="text-xs text-gray-400">Positive</p>
                   <p className="mt-1 text-xl font-bold text-gray-900">
-                    78.4%
+                    0%
                   </p>
                 </div>
 
                 <div>
                   <p className="text-xs text-gray-400">Response</p>
                   <p className="mt-1 text-xl font-bold text-gray-900">
-                    64.8%
+                    0%
                   </p>
                 </div>
               </div>

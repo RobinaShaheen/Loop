@@ -6,12 +6,10 @@ import {
   Brain,
   CheckCircle2,
   ChevronRight,
-  Clock3,
   Lightbulb,
   MessageSquare,
   RefreshCw,
   Sparkles,
-  Target,
   TrendingUp,
   Users,
   X,
@@ -44,102 +42,16 @@ type Recommendation = {
   applied: boolean;
 };
 
-const insights: Insight[] = [
-  {
-    id: 1,
-    title: "Customer satisfaction is improving",
-    description:
-      "Positive customer sentiment has increased over the recent feedback period, indicating stronger overall satisfaction.",
-    confidence: 94,
-    category: "Sentiment",
-    icon: TrendingUp,
-  },
-  {
-    id: 2,
-    title: "Support response time needs attention",
-    description:
-      "Several customers mentioned delays in receiving support responses. Faster response times may improve customer satisfaction.",
-    confidence: 89,
-    category: "Support",
-    icon: Clock3,
-  },
-  {
-    id: 3,
-    title: "Product usability is a recurring theme",
-    description:
-      "Customers frequently mention ease of use and interface simplicity when describing their experience with the product.",
-    confidence: 86,
-    category: "Product",
-    icon: Target,
-  },
-];
-
-const themes: Theme[] = [
-  {
-    id: 1,
-    name: "Product Experience",
-    percentage: 72,
-    feedbackCount: 842,
-  },
-  {
-    id: 2,
-    name: "Customer Support",
-    percentage: 58,
-    feedbackCount: 674,
-  },
-  {
-    id: 3,
-    name: "Pricing",
-    percentage: 46,
-    feedbackCount: 521,
-  },
-  {
-    id: 4,
-    name: "User Interface",
-    percentage: 41,
-    feedbackCount: 463,
-  },
-  {
-    id: 5,
-    name: "Performance",
-    percentage: 34,
-    feedbackCount: 347,
-  },
-];
-
-const initialRecommendations: Recommendation[] = [
-  {
-    id: 1,
-    title: "Improve support response time",
-    description:
-      "Consider reducing the average first-response time for customer support requests.",
-    priority: "High",
-    applied: false,
-  },
-  {
-    id: 2,
-    title: "Review product usability feedback",
-    description:
-      "Analyze recurring usability complaints and identify the most common friction points.",
-    priority: "Medium",
-    applied: false,
-  },
-  {
-    id: 3,
-    title: "Monitor pricing sentiment",
-    description:
-      "Continue monitoring feedback related to pricing before making product changes.",
-    priority: "Low",
-    applied: false,
-  },
-];
-
 export default function AIInsightsPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState("Just now");
   const [successMessage, setSuccessMessage] = useState("");
-  const [insightsData, setInsightsData] = useState<Insight[]>(insights);
-  const [themesData, setThemesData] = useState<Theme[]>(themes);
+  const [insightsData, setInsightsData] = useState<Insight[]>([]);
+  const [themesData, setThemesData] = useState<Theme[]>([]);
+  const analyzedFeedback = themesData.reduce(
+    (total, theme) => total + theme.feedbackCount,
+    0,
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -163,9 +75,9 @@ export default function AIInsightsPage() {
       })
       .catch(() => {
         if (isMounted) {
-          setInsightsData(insights);
-          setThemesData(themes);
-          setRecommendations(initialRecommendations);
+          setInsightsData([]);
+          setThemesData([]);
+          setRecommendations([]);
         }
       });
 
@@ -182,9 +94,7 @@ export default function AIInsightsPage() {
 
   const [showRelatedFeedback, setShowRelatedFeedback] = useState(false);
 
-  const [recommendations, setRecommendations] = useState(
-    initialRecommendations
-  );
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
 
   const handleRefresh = () => {
     if (isRefreshing) return;
@@ -321,7 +231,7 @@ export default function AIInsightsPage() {
 
               <div className="flex items-center gap-2 text-sm text-gray-500">
                 <MessageSquare size={17} />
-                <span>2,847 feedback items analyzed</span>
+                <span>{analyzedFeedback.toLocaleString()} feedback items analyzed</span>
               </div>
             </div>
           </div>

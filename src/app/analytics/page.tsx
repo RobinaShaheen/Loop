@@ -41,110 +41,46 @@ type DetailData = {
   description: string;
 };
 
-const rangeData: Record<
-  RangeKey,
-  {
-    label: string;
-    trend: { name: string; feedback: number; positive: number }[];
-    totalFeedback: string;
-    feedbackChange: string;
-    customers: string;
-    customerChange: string;
-    positiveSentiment: string;
-    sentimentChange: string;
-    responseRate: string;
-    responseChange: string;
-  }
-> = {
-  "7d": {
-    label: "Last 7 days",
-    trend: [
-      { name: "Mon", feedback: 86, positive: 68 },
-      { name: "Tue", feedback: 112, positive: 88 },
-      { name: "Wed", feedback: 96, positive: 74 },
-      { name: "Thu", feedback: 128, positive: 101 },
-      { name: "Fri", feedback: 116, positive: 91 },
-      { name: "Sat", feedback: 92, positive: 72 },
-      { name: "Sun", feedback: 104, positive: 82 },
-    ],
-    totalFeedback: "2,847",
-    feedbackChange: "+12.8%",
-    customers: "1,284",
-    customerChange: "+8.4%",
-    positiveSentiment: "78.4%",
-    sentimentChange: "+5.2%",
-    responseRate: "64.8%",
-    responseChange: "+3.7%",
-  },
-  "30d": {
-    label: "Last 30 days",
-    trend: [
-      { name: "Week 1", feedback: 522, positive: 394 },
-      { name: "Week 2", feedback: 618, positive: 482 },
-      { name: "Week 3", feedback: 704, positive: 556 },
-      { name: "Week 4", feedback: 812, positive: 637 },
-    ],
-    totalFeedback: "2,847",
-    feedbackChange: "+12.8%",
-    customers: "1,284",
-    customerChange: "+8.4%",
-    positiveSentiment: "78.4%",
-    sentimentChange: "+5.2%",
-    responseRate: "64.8%",
-    responseChange: "+3.7%",
-  },
-  "90d": {
-    label: "Last 90 days",
-    trend: [
-      { name: "Jan", feedback: 820, positive: 612 },
-      { name: "Feb", feedback: 940, positive: 708 },
-      { name: "Mar", feedback: 1087, positive: 852 },
-    ],
-    totalFeedback: "2,847",
-    feedbackChange: "+12.8%",
-    customers: "1,284",
-    customerChange: "+8.4%",
-    positiveSentiment: "78.4%",
-    sentimentChange: "+5.2%",
-    responseRate: "64.8%",
-    responseChange: "+3.7%",
-  },
+type AnalyticsRange = {
+  label: string;
+  trend: { name: string; feedback: number; positive: number }[];
+  totalFeedback: string;
+  feedbackChange: string;
+  customers: string;
+  customerChange: string;
+  positiveSentiment: string;
+  sentimentChange: string;
+  responseRate: string;
+  responseChange: string;
 };
 
-const sentimentData = [
-  { name: "Positive", value: 78.4 },
-  { name: "Neutral", value: 14.2 },
-  { name: "Negative", value: 7.4 },
-];
+const emptyRange = (label: string): AnalyticsRange => ({
+  label,
+  trend: [],
+  totalFeedback: "0",
+  feedbackChange: "",
+  customers: "0",
+  customerChange: "",
+  positiveSentiment: "0%",
+  sentimentChange: "",
+  responseRate: "0%",
+  responseChange: "",
+});
 
-const themeData = [
-  { name: "Product Experience", value: 842 },
-  { name: "Customer Support", value: 674 },
-  { name: "Pricing", value: 521 },
-  { name: "User Interface", value: 463 },
-  { name: "Performance", value: 347 },
-];
-
-const sentimentDetails: Record<string, DetailData> = {
-  Positive: {
-    title: "Positive Sentiment",
-    value: "78.4%",
-    description:
-      "Most customer feedback is positive. Customers frequently mention product usefulness, reliability, and overall experience.",
-  },
-  Neutral: {
-    title: "Neutral Sentiment",
-    value: "14.2%",
-    description:
-      "Neutral feedback generally contains suggestions, factual comments, or experiences without a strong positive or negative tone.",
-  },
-  Negative: {
-    title: "Negative Sentiment",
-    value: "7.4%",
-    description:
-      "Negative feedback is concentrated around support response times, usability issues, and selected pricing concerns.",
-  },
+const rangeData: Record<RangeKey, AnalyticsRange> = {
+  "7d": emptyRange("Last 7 days"),
+  "30d": emptyRange("Last 30 days"),
+  "90d": emptyRange("Last 90 days"),
 };
+
+const emptySentimentData: { name: string; value: number }[] = [];
+const emptyThemeData: { name: string; value: number }[] = [];
+
+const sentimentDetail = (name: string, value: number): DetailData => ({
+  title: `${name} Sentiment`,
+  value: `${value}%`,
+  description: `${name} feedback currently represents ${value}% of stored feedback.`,
+});
 
 export default function AnalyticsPage() {
   const [range, setRange] = useState<RangeKey>("30d");
@@ -154,7 +90,10 @@ export default function AnalyticsPage() {
   const [selectedDetail, setSelectedDetail] = useState<DetailData | null>(
     null
   );
-  const [analyticsData, setAnalyticsData] = useState(rangeData);
+  const emptyRanges = rangeData;
+  const [analyticsData, setAnalyticsData] = useState(emptyRanges);
+  const [sentimentData, setSentimentData] = useState(emptySentimentData);
+  const [themeData, setThemeData] = useState(emptyThemeData);
 
   useEffect(() => {
     let isMounted = true;
@@ -164,10 +103,14 @@ export default function AnalyticsPage() {
       .then((result) => {
         if (!isMounted || !result?.data) return;
         setAnalyticsData(result.data);
+        setSentimentData(result.sentimentData ?? []);
+        setThemeData(result.themeData ?? []);
       })
       .catch(() => {
         if (isMounted) {
-          setAnalyticsData(rangeData);
+          setAnalyticsData(emptyRanges);
+          setSentimentData([]);
+          setThemeData([]);
         }
       });
 
@@ -515,9 +458,7 @@ export default function AnalyticsPage() {
                       onClick={(data) => {
                         const name = data.name as string;
 
-                        if (sentimentDetails[name]) {
-                          openDetail(sentimentDetails[name]);
-                        }
+                        openDetail(sentimentDetail(name, Number(data.value ?? 0)));
                       }}
                       className="cursor-pointer outline-none"
                     >
@@ -551,7 +492,7 @@ export default function AnalyticsPage() {
                   <button
                     key={item.name}
                     type="button"
-                    onClick={() => openDetail(sentimentDetails[item.name])}
+                    onClick={() => openDetail(sentimentDetail(item.name, item.value))}
                     className="flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left transition hover:bg-gray-50"
                   >
                     <div className="flex items-center gap-3">
@@ -696,7 +637,7 @@ export default function AnalyticsPage() {
 
                   <p className="text-sm leading-6 text-gray-600">
                     Positive sentiment currently represents{" "}
-                    <strong className="text-gray-900">78.4%</strong> of
+                    <strong className="text-gray-900">{currentData.positiveSentiment}</strong> of
                     analyzed feedback.
                   </p>
                 </div>
@@ -709,7 +650,7 @@ export default function AnalyticsPage() {
 
                   <p className="text-sm leading-6 text-gray-600">
                     Response rate is currently{" "}
-                    <strong className="text-gray-900">64.8%</strong>, leaving
+                    <strong className="text-gray-900">{currentData.responseRate}</strong>, leaving
                     room to improve customer follow-up.
                   </p>
                 </div>
@@ -721,8 +662,8 @@ export default function AnalyticsPage() {
                   />
 
                   <p className="text-sm leading-6 text-gray-600">
-                    Product Experience is the most frequently detected theme
-                    with <strong className="text-gray-900">842</strong>{" "}
+                    {themeData[0]?.name ?? "No theme"} is the most frequently detected theme
+                    with <strong className="text-gray-900">{themeData[0]?.value ?? 0}</strong>{" "}
                     feedback entries.
                   </p>
                 </div>
