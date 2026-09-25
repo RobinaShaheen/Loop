@@ -291,7 +291,12 @@ export default function Dashboard() {
         if (!isMounted || !result?.data) return;
 
         setSummary({
-          stats: result.data.stats ?? stats,
+          stats: Array.isArray(result.data.stats)
+            ? result.data.stats.map((item: Partial<(typeof stats)[number]>, index: number) => ({
+                ...stats[index % stats.length],
+                ...item,
+              }))
+            : stats,
           chartData: result.data.chartData ?? chartData,
           sentimentBreakdown:
             result.data.sentimentBreakdown ??
