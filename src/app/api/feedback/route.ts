@@ -1,10 +1,56 @@
 import { NextResponse } from "next/server";
 
-import { feedbackItems } from "@/lib/mock-data";
+import { getSql } from "@/lib/neon";
+
+type FeedbackRow = {
+  id: number;
+  customer: string;
+  email: string;
+  message: string;
+  sentiment: "Positive" | "Neutral" | "Negative";
+  category: string;
+  priority: "High" | "Medium" | "Low";
+  date: string;
+};
+
+async function ensureFeedbackTable() {
+  const sql = getSql();
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS feedback (
+      id SERIAL PRIMARY KEY,
+      customer TEXT NOT NULL,
+      email TEXT NOT NULL,
+      message TEXT NOT NULL,
+      sentiment TEXT NOT NULL,
+      category TEXT NOT NULL,
+      priority TEXT NOT NULL,
+      date TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+}
 
 export async function GET() {
+  await ensureFeedbackTable();
+  const sql = getSql();
+
+  const items = (await sql`
+    SELECT
+      id,
+      customer,
+      email,
+      message,
+      sentiment,
+      category,
+      priority,
+      date
+    FROM feedback
+    ORDER BY created_at DESC, id DESC
+  `) as FeedbackRow[];
+
   return NextResponse.json({
-    data: feedbackItems,
+    data: items,
   });
 }
 
@@ -43,22 +89,26 @@ export async function POST(request: Request) {
       ? priority
       : "Medium";
 
-    const created = {
-      id: Math.max(0, ...feedbackItems.map((item) => item.id)) + 1,
-      customer: customerName,
-      email,
-      message,
-      sentiment: validSentiment as (typeof feedbackItems)[number]["sentiment"],
-      category,
-      priority: validPriority as (typeof feedbackItems)[number]["priority"],
-      date: new Date().toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      }),
-    };
+    await ensureFeedbackTable();
+    const sql = getSql();
 
-    feedbackItems.unshift(created);
+    const [created] = (await sql`
+      INSERT INTO feedback (customer, email, message, sentiment, category, priority, date)
+      VALUES (
+        ${customerName},
+        ${email},
+        ${message},
+        ${validSentiment},
+        ${category},
+        ${validPriority},
+        ${new Date().toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })}
+      )
+      RETURNING id, customer, email, message, sentiment, category, priority, date
+    `) as FeedbackRow[];
 
     return NextResponse.json(
       {
