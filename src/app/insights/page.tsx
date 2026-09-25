@@ -48,10 +48,7 @@ export default function AIInsightsPage() {
   const [successMessage, setSuccessMessage] = useState("");
   const [insightsData, setInsightsData] = useState<Insight[]>([]);
   const [themesData, setThemesData] = useState<Theme[]>([]);
-  const analyzedFeedback = themesData.reduce(
-    (total, theme) => total + theme.feedbackCount,
-    0,
-  );
+  const [analyzedFeedback, setAnalyzedFeedback] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -60,6 +57,8 @@ export default function AIInsightsPage() {
       .then((response) => response.json())
       .then((result) => {
         if (!isMounted || !result?.data) return;
+
+        setAnalyzedFeedback(Number(result.feedbackCount ?? 0));
 
         if (Array.isArray(result.data.insights)) {
           setInsightsData(result.data.insights);
@@ -78,6 +77,7 @@ export default function AIInsightsPage() {
           setInsightsData([]);
           setThemesData([]);
           setRecommendations([]);
+          setAnalyzedFeedback(0);
         }
       });
 

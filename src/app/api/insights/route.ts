@@ -17,6 +17,9 @@ export async function GET() {
     SELECT id, title, description, priority, applied
     FROM recommendations ORDER BY created_at DESC, id DESC
   `) as Array<Record<string, unknown>>;
+  const feedbackCount = await sql`
+    SELECT COUNT(*)::int AS count FROM feedback
+  `;
 
   return NextResponse.json({
     data: {
@@ -24,5 +27,6 @@ export async function GET() {
       themes,
       recommendations,
     },
+    feedbackCount: Number(feedbackCount[0]?.count ?? 0),
   });
 }
