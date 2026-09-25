@@ -18,10 +18,16 @@ export async function GET() {
   await ensureDatabase();
   const sql = getSql();
   const customers = (await sql`
-    SELECT id, name, email, company, feedback, sentiment, score,
-      last_feedback AS "lastFeedback", status
-    FROM customers
-    ORDER BY created_at DESC, id DESC
+    SELECT c.id, c.name, c.email, c.company,
+      COUNT(f.id)::int AS feedback,
+      c.sentiment, c.score,
+      COALESCE(MAX(f.date), c.last_feedback) AS "lastFeedback",
+      c.status
+    FROM customers c
+    LEFT JOIN feedback f ON LOWER(f.email) = LOWER(c.email)
+    GROUP BY c.id, c.name, c.email, c.company, c.sentiment, c.score,
+      c.last_feedback, c.status
+    ORDER BY c.created_at DESC, c.id DESC
   `) as CustomerRow[];
 
   return NextResponse.json({
