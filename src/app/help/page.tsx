@@ -176,7 +176,7 @@ export default function HelpPage() {
     setOpenFaq(0);
   };
 
-  const handleSupportSubmit = (
+  const handleSupportSubmit = async (
     event: React.FormEvent<HTMLFormElement>
   ) => {
     event.preventDefault();
@@ -197,6 +197,22 @@ export default function HelpPage() {
 
     if (!emailIsValid) {
       setSupportError("Please enter a valid email address.");
+      return;
+    }
+
+    const response = await fetch("/api/support", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: supportName.trim(),
+        email: supportEmail.trim(),
+        message: supportMessage.trim(),
+      }),
+    });
+
+    if (!response.ok) {
+      const result = await response.json().catch(() => null);
+      setSupportError(result?.error ?? "Unable to send your support message.");
       return;
     }
 

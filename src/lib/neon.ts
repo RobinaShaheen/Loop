@@ -88,4 +88,15 @@ export async function ensureDatabase() {
       description TEXT NOT NULL
     )
   `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS support_messages (
+      id SERIAL PRIMARY KEY,
+      name TEXT NOT NULL,
+      email TEXT NOT NULL,
+      message TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'New',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
 }

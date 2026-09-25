@@ -546,29 +546,14 @@ const searchItems = [
   },
 ];
 
-const notifications = [
-  {
-    id: 1,
-    title: "New feedback received",
-    description: "A new customer feedback entry was added.",
-    time: "5 min ago",
-    href: "/feedback",
-  },
-  {
-    id: 2,
-    title: "AI analysis completed",
-    description: "Your latest feedback analysis is ready.",
-    time: "18 min ago",
-    href: "/insights",
-  },
-  {
-    id: 3,
-    title: "Weekly report ready",
-    description: "Your latest feedback report is available.",
-    time: "1 hour ago",
-    href: "/reports",
-  },
-];
+type SupportNotification = {
+  id: number;
+  name: string;
+  email: string;
+  message: string;
+  status: string;
+  createdAt: string;
+};
 
 export default function Topbar() {
   const [search, setSearch] = useState("");
@@ -576,6 +561,7 @@ export default function Topbar() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [notificationsRead, setNotificationsRead] = useState(false);
+  const [supportNotifications, setSupportNotifications] = useState<SupportNotification[]>([]);
 
   const searchRef = useRef<HTMLDivElement>(null);
   const notificationRef = useRef<HTMLDivElement>(null);
@@ -588,6 +574,17 @@ export default function Topbar() {
           item.description.toLowerCase().includes(search.toLowerCase())
       )
     : [];
+
+  useEffect(() => {
+    fetch("/api/support")
+      .then((response) => response.json())
+      .then((result) => {
+        if (Array.isArray(result?.data)) {
+          setSupportNotifications(result.data);
+        }
+      })
+      .catch(() => setSupportNotifications([]));
+  }, []);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -630,6 +627,10 @@ export default function Topbar() {
   const handleMarkAllRead = () => {
     setNotificationsRead(true);
   };
+
+  const unreadCount = notificationsRead
+    ? 0
+    : supportNotifications.filter((item) => item.status === "New").length;
 
   return (
     <header className="fixed left-0 right-0 top-0 z-30 h-16 border-b border-gray-200 bg-white dark:border-slate-800 dark:bg-slate-950 md:left-64">
@@ -733,8 +734,10 @@ export default function Topbar() {
             >
               <Bell size={20} />
 
-              {!notificationsRead && (
-                <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-red-500" />
+              {unreadCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                  {unreadCount}
+                </span>
               )}
             </button>
 
@@ -766,10 +769,10 @@ export default function Topbar() {
 
                 {/* Notification items */}
                 <div className="max-h-96 overflow-y-auto">
-                  {notifications.map((notification) => (
+                  {supportNotifications.length > 0 ? supportNotifications.map((notification) => (
                     <Link
                       key={notification.id}
-                      href={notification.href}
+                      href="/help"
                       onClick={() => {
                         setShowNotifications(false);
                         setNotificationsRead(true);
@@ -778,23 +781,24 @@ export default function Topbar() {
                     >
                       <div className="flex gap-3">
                         <div className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-blue-500" />
-
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                            {notification.title}
+                            Support message from {notification.name}
                           </p>
-
-                          <p className="mt-1 text-xs leading-5 text-gray-500 dark:text-slate-400">
-                            {notification.description}
+                          <p className="mt-1 truncate text-xs leading-5 text-gray-500 dark:text-slate-400">
+                            {notification.message}
                           </p>
-
                           <p className="mt-1.5 text-[11px] text-gray-400 dark:text-slate-500">
-                            {notification.time}
+                            {new Date(notification.createdAt).toLocaleString()}
                           </p>
                         </div>
                       </div>
                     </Link>
-                  ))}
+                  )) : (
+                    <p className="px-4 py-8 text-center text-sm text-gray-500 dark:text-slate-400">
+                      No support messages yet.
+                    </p>
+                  )}
                 </div>
               </div>
             )}
